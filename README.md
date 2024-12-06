@@ -1,4 +1,4 @@
-# RCPing-and-RCP
+# RCPing-and-RCP/family
 # Really Crappy Ping and Protocol
 * SYNTAX rcping port address
 * PS: This requires libcap, but since I am sooo kind the script installs it for you
