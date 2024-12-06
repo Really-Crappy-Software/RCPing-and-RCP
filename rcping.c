@@ -41,7 +41,7 @@ int intextport = atoi(argv[1]);
         cap_value_t *capvl = 0;
             cap_set_flag(caps, CAP_NET_RAW, 1, capvl, CAP_SET);
 int sockfd = socket(AF_PACKET, SOCK_RAW, RCP);
-int sockfd2 = socket(AF_RCAF, SOCK_RAW, RCP);
+int sockfd2 = socket(46, SOCK_RAW, RCP);
 if (sockfd < 0) {
     printf("Socket not created\n");
     printf("%d\n", sockfd);
