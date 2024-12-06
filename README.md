@@ -1,5 +1,5 @@
 # RCPing-and-RCP/family
-# Really Crappy Ping and Protocol
+# Really Crappy Ping and Protocol/family
 * SYNTAX rcping port address
 * PS: This requires libcap, but since I am sooo kind the script installs it for you
 * PPS: This uses RCP as it's main protocol, RCP is also why it took so long
