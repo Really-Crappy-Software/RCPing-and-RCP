@@ -7,6 +7,8 @@
 #include <net/if.h>
 #include <linux/if_xdp.h>
 #include <asm/types.h>
+#include <time.h>
+#include <unistd.h>
 #include <linux/if_ether.h>
 #include <libcap.h>
 #include <string.h>
@@ -18,21 +20,18 @@ typedef unsigned short ushort_t;
 struct sockaddr_ll {
     ushort_t sll_family;      /* address family (AF_LINK) */
     ushort_t sll_protocol;    /* link-layer protocol (e.g., Ethernet) */
-    int32_t sll_ifindex;      /* interface index */
+    int32_t  sll_ifindex;      /* interface index */
     uint16_t sll_hatype;     /* ARP hardware type */
     uint8_t  sll_pkttype;    /* packet type */
     uint8_t  sll_halen;      /* hardware address length */
     uint8_t  sll_addr[8];   /* hardware address (e.g., MAC address) */
 };
-struct sockaddr_rc {
-    int  rc_family; /* Should always be RCP */
-    uint32_t rc_ipaddr;
-    uint16_t rc_port;
-};
+
+double   version;
 uint16_t srcport;
 uint16_t extport;
-uint16_t srcport1;
-uint16_t extport2;
+uint8_t  meinip;
+uint8_t  destip;
 char payload[256];
 
 int main(int argc, char* argv[]) {
@@ -41,7 +40,7 @@ int intextport = atoi(argv[1]);
         cap_value_t *capvl = 0;
             cap_set_flag(caps, CAP_NET_RAW, 1, capvl, CAP_SET);
 int sockfd = socket(AF_PACKET, SOCK_RAW, RCP);
-int sockfd2 = socket(46, SOCK_RAW, RCP);
+int sockfd2 = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 if (sockfd < 0) {
     printf("Socket not created\n");
     printf("%d\n", sockfd);
@@ -57,13 +56,13 @@ if (sockfd < 0) {
         printf("Socket 2 Created successfully\n");
     }
     printf("test1\n");
-    struct sockaddr_rc *dst_addr = malloc((size_t)sizeof(struct sockaddr_rc));
+    struct sockaddr_in *dst_addr = malloc((size_t)sizeof(struct sockaddr_in));
     printf("1\n");
     char buffer[sizepkt];
         printf("hi\n");
-        dst_addr->rc_family = RCP;
-        dst_addr->rc_ipaddr = inet_addr("8.8.8.8");
-        dst_addr->rc_port = htons(intextport);
+        dst_addr->sin_family = AF_INET; // IPv4 address family
+        dst_addr->sin_port = htons(intextport); // port number
+        dst_addr->sin_addr.s_addr = inet_addr("8.8.8.8"); // IPv4 address
     struct sockaddr_ll *src_addr = malloc((size_t)sizeof(struct sockaddr_ll));
         int error1 = src_addr->sll_family = AF_PACKET;
                 if (error1 < 0) {
@@ -106,21 +105,46 @@ if (sockfd < 0) {
         struct sockaddr *addr = (struct sockaddr *)dst_addr;
         printf("1\n");
         struct sockaddr *interlcal = (struct sockaddr *)src_addr;
-     strcpy(payload, "This packet was sent using RCPing under the Really Crappy Protocol");
-     extport = htons(intextport);
-     srcport = htons(RCP);
+        printf("here\n");
+     printf("here\n");
+        strcpy(payload, "This packet was sent using RCPing under the Really Crappy Protocol");
+        printf("here\n");
+        version = 1.0;
+        printf("here\n");
+        meinip = inet_addr("220.233.193.89");
+        printf("here\n");
+        destip = inet_addr("8.8.8.8");
+        printf("here\n");
+        extport = htons(intextport);
+        printf("here\n");
+        srcport = htons(RCP);
+        printf("here\n");
      char chrsrcport[16];
      char chrextport[16];
+     char chrmeinip[8];
+     char chrdestip[8];
+     char chrversion[8];
+     printf("here\n");
      sprintf(chrsrcport, "%d", srcport);
      sprintf(chrextport, "%d", extport);
+     sprintf(chrversion, "%d", version);
+     sprintf(chrdestip, "%d", destip);
+     sprintf(chrmeinip, "%d", meinip);
+     printf("here\n");
         memcpy(buffer, chrsrcport, sizeof(chrsrcport));
         printf("7\n");
             memcpy(buffer + sizeof(chrsrcport), chrextport, sizeof(chrextport));
             printf("8\n");
-                memcpy(buffer + sizeof(chrsrcport) + sizeof(chrextport), payload, 8);
+                memcpy(buffer + sizeof(chrsrcport) + sizeof(chrextport), payload, sizeof(payload));
                 printf("9\n");
-        srcport1 = htons(RCP);
-        extport2 = htons(intextport);
+                    memcpy(buffer + sizeof(chrsrcport) + sizeof(chrextport) + sizeof(payload), chrversion, sizeof(chrversion));
+                    printf("10\n");
+                        memcpy(buffer + sizeof(chrsrcport) + sizeof(chrextport) + sizeof(payload) + sizeof(chrversion),  chrmeinip, sizeof(chrmeinip));
+                        printf("11\n");
+                            memcpy(buffer + sizeof(chrsrcport) + sizeof(chrextport) + sizeof(payload) + sizeof(chrversion) + sizeof(chrmeinip), chrdestip, sizeof(chrdestip));
+                            printf("12\n");
+
+
         int miku = bind(sockfd, interlcal, sizeof(*src_addr));
         printf("10\n");
         if (miku < 0) {
@@ -138,7 +162,8 @@ if (sockfd < 0) {
         while (main) {
             ssize_t senresult = send(sockfd2, buffer, sizeof(buffer), 0);
             if (senresult < 0) {
-                printf("Package wasn't sent");
+                printf("Package couldn't be sent");
+                return -1;
             }
         }
     }
