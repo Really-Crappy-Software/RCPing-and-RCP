@@ -8,6 +8,7 @@
 #include <linux/if_xdp.h>
 #include <asm/types.h>
 #include <time.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <linux/if_ether.h>
 #include <libcap.h>
@@ -35,9 +36,30 @@ uint8_t  destip;
 char payload[256];
 
 int main(int argc, char* argv[]) {
+  ssize_t errornot;
+  int intextport = atoi(argv[1]);
+  char ipv4[INET_ADDRSTRLEN];
+  struct addrinfo savannah, *gnu, *rms;
+  memset(&savannah, 0, sizeof savannah);
+  savannah.ai_family = AF_INET;
+  savannah.ai_socktype = SOCK_STREAM;
+  savannah.ai_flags = 0;
+  errornot = getaddrinfo(argv[2], argv[1], &savannah, &gnu);
+  if (errornot < 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errornot));
+    return -1;
+  }
+  for (rms = gnu;rms != NULL; rms = rms->ai_next) {
+    void *addr;
+    if (rms->ai_family == AF_INET) {
+      struct sockaddr_in *ipv4addr = (struct sockaddr_in *)rms->ai_addr;
+      addr = &(ipv4addr->sin_addr);
+    }
+    inet_ntop(rms->ai_family, addr, ipv4, sizeof(ipv4));
+    printf("IPv4 for %s: %s\n", argv[2], ipv4);
+  }
   clock_t start, end;
   struct hostent *host_entry;
-int intextport = atoi(argv[1]);
     cap_t caps = cap_init();
         cap_value_t *capvl = 0;
             cap_set_flag(caps, CAP_NET_RAW, 1, capvl, CAP_SET);
@@ -61,7 +83,7 @@ if (sockfd < 0) {
     char buffer[sizepkt];
         dst_addr->sin_family = AF_INET; // IPv4 address family
         dst_addr->sin_port = htons(intextport); // port number
-        dst_addr->sin_addr.s_addr = inet_addr(argv[2]); // IPv4 address
+        dst_addr->sin_addr.s_addr = inet_addr(ipv4); // IPv4 address
     struct sockaddr_ll *src_addr = malloc((size_t)sizeof(struct sockaddr_ll));
         int error1 = src_addr->sll_family = AF_PACKET;
                 if (error1 < 0) {
@@ -108,7 +130,7 @@ if (sockfd < 0) {
         version = 1.0;
         char ipaddr[16];
         meinip = inet_addr("0.0.0.0");
-        destip = inet_addr(argv[2]);
+        destip = inet_addr(ipv4);
         extport = htons(intextport);
         srcport = htons(RCP);
      char chrsrcport[16];
@@ -153,7 +175,7 @@ if (sockfd < 0) {
                 return -1;
             } else {
         double thyme = ((double) (end - start)) / CLOCKS_PER_SEC;
-        printf("package sent to %s, in %f seconds\n", argv[2], thyme);
+        printf("package sent to %s/%s, in %f seconds\n", argv[2], ipv4, thyme);
       }
         }
     }
