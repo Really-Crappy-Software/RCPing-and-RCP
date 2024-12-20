@@ -9,6 +9,7 @@
 #include <asm/types.h>
 #include <time.h>
 #include <netdb.h>
+#include <netinet/ip.h>
 #include <unistd.h>
 #include <linux/if_ether.h>
 #include <libcap.h>
@@ -79,11 +80,11 @@ if (sockfd < 0) {
     } else {
         printf("Socket 2 Created successfully\n");
     }
-    struct sockaddr_in *dst_addr = malloc((size_t)sizeof(struct sockaddr_in));
-    char buffer[sizepkt];
-        dst_addr->sin_family = AF_INET; // IPv4 address family
-        dst_addr->sin_port = htons(intextport); // port number
-        dst_addr->sin_addr.s_addr = inet_addr(ipv4); // IPv4 address
+    char buffer[20];
+    struct sockaddr_in dst_addr;
+        dst_addr.sin_family = AF_INET;
+        dst_addr.sin_port = htons(intextport);
+        dst_addr.sin_addr.s_addr = inet_addr(ipv4);
     struct sockaddr_ll *src_addr = malloc((size_t)sizeof(struct sockaddr_ll));
         int error1 = src_addr->sll_family = AF_PACKET;
                 if (error1 < 0) {
@@ -93,7 +94,7 @@ if (sockfd < 0) {
         }
         int error2 = src_addr->sll_protocol = RCP;
                 if (error2 < 0) {
-            printf("The Internet protocol(IP) couldn't be set up\n");
+            printf("The protocol couldn't be set up\n");
             printf("%d\n", error2);
             return -1;
         }
@@ -123,60 +124,39 @@ if (sockfd < 0) {
             return -1;
         }
       
-        struct sockaddr *addr = (struct sockaddr *)dst_addr;
-        
+        struct sockaddr *addr = (struct sockaddr *)&dst_addr;
+        socklen_t dstsize = sizeof(dst_addr);
         struct sockaddr *interlcal = (struct sockaddr *)src_addr;
-        strcpy(payload, "This packet was sent using RCPing under the Really Crappy Protocol");
-        version = 1.0;
-        char ipaddr[16];
-        meinip = inet_addr("0.0.0.0");
-        destip = inet_addr(ipv4);
-        extport = htons(intextport);
-        srcport = htons(RCP);
-     char chrsrcport[16];
-     char chrextport[16];
-     char chrmeinip[8];
-     char chrdestip[8];
-     char chrversion[8];
-     char chrpayload[256];
-     sprintf(chrsrcport, "client port:%d\n", srcport);
-     sprintf(chrextport, "port sent to:%d\n", extport);
-     sprintf(chrversion, "Version of RCP:%d\n", version);
-     sprintf(chrdestip, "Destination IP:%d\n", destip);
-     sprintf(chrmeinip, "Client IP:%d\n", meinip);
-     sprintf(chrpayload, "Payload:%s\n", payload );
-      strcat(buffer, chrsrcport);
-        strcat(buffer, chrextport);
-          strcat(buffer, chrversion);
-            strcat(buffer, chrdestip);
-              strcat(buffer, chrmeinip);
-                strcat(buffer, chrpayload);
+        char iphdrsze[20];
+        struct iphdr *advil = (struct iphdr *)iphdrsze;
+        	advil->ihl = 5;
+			advil->version = 4;
+			advil->tos = 0;
+			advil->tot_len = htons(40);
+			advil->id = htons(RCP);
+			advil->frag_off = 0;
+			advil->ttl = 32;
+			advil->protocol = IPPROTO_RAW;
+			advil->saddr = inet_addr("0.0.0.0");
+			advil->daddr = inet_addr(ipv4);
         int miku = bind(sockfd, interlcal, sizeof(*src_addr));
         if (miku < 0) {
             printf("client interface couldn't be set up\n");
             printf("%d\n", miku);
             return -1;
         }
-
-        int jumanji = connect(sockfd2, addr, sizeof(*dst_addr));
-    if (jumanji < 0) {
-        printf("Couldn't establish a connection using RCP, unsurprisingly\n");
-        printf("%d\n", jumanji);
-        return -1;
-    } else {
-      printf("package sending:\n %s", buffer);
         while (main) {
       sleep(1);
       start = clock();
-            ssize_t senresult = send(sockfd2, buffer, sizeof(buffer), 0);
+     ssize_t senresult = sendto(sockfd2, buffer, sizeof(buffer), 0, (struct sockaddr *)&dst_addr, dstsize);
       end = clock();
             if (senresult < 0) {
                 printf("Package couldn't be sent\n");
+                printf("%d\n", senresult);
                 return -1;
             } else {
         double thyme = ((double) (end - start)) / CLOCKS_PER_SEC;
-        printf("package sent to %s/%s, in %f seconds\n", argv[2], ipv4, thyme);
+        printf("package sent to %s/%s, in %f seconds\n", argv[2], argv[1], thyme);
       }
-        }
     }
 }
