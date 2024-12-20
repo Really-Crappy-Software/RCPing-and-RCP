@@ -37,6 +37,10 @@ uint8_t  destip;
 char payload[256];
 
 int main(int argc, char* argv[]) {
+	if (strcmp(argv[1], "-h") == 0) {
+		printf("SYNTAX: sudo rcping PORT IP/Website\n -h: displays this menu \n if you have any problems report them on Github\n");
+		return 0;
+	}
   ssize_t errornot;
   int intextport = atoi(argv[1]);
   char ipv4[INET_ADDRSTRLEN];
